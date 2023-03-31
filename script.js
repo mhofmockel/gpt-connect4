@@ -305,37 +305,16 @@ function computerMove() {
   const startTime = performance.now();
   const timeLimit = 3000; // Modify this value to set the time limit in milliseconds
 
-  // Adjust dynamicMaxDepth based on the current turn number and slider value
-  const turnNumber = getTurnNumber();
-  let dynamicMaxDepth = parseInt(difficultySlider.value); // Use the current slider value instead of MAX_DEPTH
-  if (turnNumber >= 4) {
-    dynamicMaxDepth += 2; // Increase depth for turns 4 and above
+  let dynamicMaxDepth = parseInt(difficultySlider.value);
+  if (getTurnNumber() >= 4) {
+    dynamicMaxDepth += 2;
   }
 
   let depth = 1;
 
   while (depth <= dynamicMaxDepth) {
-    // Perform search with the current depth
     searchDepthDisplay.textContent = depth;
-    const result = alphaBetaMove(currentPlayer, -Infinity, Infinity, depth);function computerMove() {
-  let bestMove = -1;
-  let bestValue = -Infinity;
-  const startTime = performance.now();
-  const timeLimit = 3000; // Modify this value to set the time limit in milliseconds
-
-  // Adjust dynamicMaxDepth based on the current turn number and slider value
-  const turnNumber = getTurnNumber();
-  let dynamicMaxDepth = parseInt(difficultySlider.value); // Use the current slider value instead of MAX_DEPTH
-  if (turnNumber >= 4) {
-    dynamicMaxDepth += 2; // Increase depth for turns 4 and above
-  }
-
-  let depth = 1;
-
-  while (depth <= dynamicMaxDepth) {
-    // Perform search with the current depth
-    searchDepthDisplay.textContent = depth;
-    const result = alphaBetaMove(currentPlayer, -Infinity, Infinity, depth);
+    const result = alphaBetaMove(currentPlayer, -Infinity, Infinity, depth, true);
     const currentValue = result.value;
 
     if (currentValue > bestValue) {
@@ -343,66 +322,21 @@ function computerMove() {
       bestMove = result.move;
     }
 
-    // If a winning move is found, stop the search
     if (bestValue === Infinity) {
       break;
     }
 
-    // Check if the time limit is exceeded
     const elapsedTime = performance.now() - startTime;
     if (elapsedTime > timeLimit) {
       break;
     }
 
-    // Increase the depth for the next iteration
     depth++;
   }
-
-  if (bestMove === -1) {
-    console.log("No valid move found.");
-    // Choose a random available move when the bestMove is -1
-    const availableMoves = getAvailableMoves();
-    if (availableMoves.length > 0) {
-      const randomMove = availableMoves[Math.floor(Math.random() * availableMoves.length)];
-      const randomCell = findLowestEmptyCell(randomMove);
-      makeMove(randomCell, currentPlayer);
-    }
-    return;
-  }
-
-  const bestCell = findLowestEmptyCell(bestMove);
-  makeMove(bestCell, currentPlayer);
-}
-    const currentValue = result.value;
-
-    if (currentValue > bestValue) {
-      bestValue = currentValue;
-      bestMove = result.move;
-    }
-
-    // If a winning move is found, stop the search
-    if (bestValue === Infinity) {
-      break;
-    }
-
-    // Check if the time limit is exceeded
-    const elapsedTime = performance.now() - startTime;
-    if (elapsedTime > timeLimit) {
-      break;
-    }
-
-    // Increase the depth for the next iteration
-    depth++;
-  }
-
-    // Log the selected move and its evaluation value
   console.log(`Selected move: ${bestMove}, Evaluation value: ${bestValue}`);
   
   if (bestMove === -1) {
-    console.log("No valid move found.");
-    // Choose a random available move when the bestMove is -1
     const availableMoves = getAvailableMoves();
-    
     if (availableMoves.length > 0) {
       const randomMove = availableMoves[Math.floor(Math.random() * availableMoves.length)];
       const randomCell = findLowestEmptyCell(randomMove);
@@ -416,15 +350,30 @@ function computerMove() {
 }
 
 // Determine the best move using the alpha-beta pruning algorithm
-function alphaBetaMove(player, alpha, beta, depth) {
+function alphaBetaMove(player, alpha, beta, depth, isRoot = false) {
   if (depth === 0 || checkWin("X") || checkWin("O")) {
     return { move: -1, value: evaluateBoard() };
   }
 
-  const availableMoves = getAvailableMoves();
+  let availableMoves = getAvailableMoves();
 
   if (availableMoves.length === 0) {
     return { move: -1, value: depth === MAX_DEPTH ? -1 : evaluateBoard() };
+  }
+
+  if (isRoot) {
+    // Sort available moves based on their heuristic values for the root node
+    availableMoves = availableMoves.sort((moveA, moveB) => {
+      const cellA = findLowestEmptyCell(moveA);
+      const cellB = findLowestEmptyCell(moveB);
+      makeMove(cellA, player);
+      makeMove(cellB, player);
+      const valueA = evaluateBoard();
+      const valueB = evaluateBoard();
+      undoMove(cellA);
+      undoMove(cellB);
+      return valueB - valueA;
+    });
   }
 
   let bestMove = -1;
