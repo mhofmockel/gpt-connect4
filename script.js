@@ -14,6 +14,13 @@ const gameModeLabels = document.querySelectorAll(".toggle-label");
 const resetButton = document.getElementById("resetButton");
 const difficultySlider = document.getElementById("difficultySlider");
 const difficultyValue = document.getElementById("difficultyValue");
+const openingBook = [
+  /* Add your preferred opening moves here.*/
+  {
+    moves: ["3", "2", "4", "2", "4", "4"],
+    response: "1"
+  },
+];
 
 // Initialize variables for game depth, wins, current player, and game mode
 let MAX_DEPTH = 4;
@@ -278,6 +285,15 @@ function isCellEmpty(cell) {
 
 // Make a move for the computer player
 function computerMove() {
+  // Use opening book if available
+  for (const opening of openingBook) {
+    if (isOpeningMatch(opening.moves)) {
+      const openingMove = parseInt(opening.response);
+      const openingCell = findLowestEmptyCell(openingMove);
+      makeMove(openingCell, currentPlayer);
+      return;
+    }
+  }
   let bestMove = -1;
   let bestValue = -Infinity;
   const startTime = performance.now();
@@ -483,6 +499,44 @@ function countConnectedPieces(index, step, player) {
   return count;
 }
 
+function scoreMove(move, player) {
+  const cell = findLowestEmptyCell(move);
+  if (!cell) return -Infinity;
+
+  const row = parseInt(cell.getAttribute("data-row"));
+
+  // Check for potential win
+  if (isWinningMove(row, move, player)) {
+    return 100;
+  }
+
+  // Check for potential opponent win
+  if (isWinningMove(row, move, player === "X" ? "O" : "X")) {
+    return 90;
+  }
+
+  // Prioritize center column
+  if (move === 3) {
+    return 80;
+  }
+
+  // Prioritize adjacent columns
+  if (move === 2 || move === 4) {
+    return 70;
+  }
+
+  // Default score
+  return 60;
+}
+
+function isWinningMove(row, col, player) {
+  const cell = cells[row * 7 + col];
+  makeMove(cell, player);
+  const isWin = checkWin(player);
+  undoMove(cell);
+  return isWin;
+}
+
 // Get a list of available moves
 function getAvailableMoves() {
   const availableMoves = [];
@@ -491,6 +545,14 @@ function getAvailableMoves() {
       availableMoves.push(col);
     }
   }
+
+  // Order the available moves by their score
+  availableMoves.sort((a, b) => {
+    const scoreA = scoreMove(a, currentPlayer);
+    const scoreB = scoreMove(b, currentPlayer);
+    return scoreB - scoreA;
+  });
+
   return availableMoves;
 }
 
