@@ -216,13 +216,20 @@ function findLowestEmptyCell(col) {
 
 // Handle clicking on a cell
 function handleCellClick(event) {
-  const clickedCell = event.target;
+  let clickedCell = event.target;
+  
+  // Find the .cell element in case the clicked element is not the .cell itself
+  while (!clickedCell.classList.contains("cell")) {
+    clickedCell = clickedCell.parentElement;
+  }
+
   const col = parseInt(clickedCell.getAttribute("data-col"));
   const cell = findLowestEmptyCell(col);
 
   if (!cell) return;
 
   makeMove(cell, currentPlayer);
+logBoard(col, currentPlayer, Array.from({ length: 6 }, () => new Array(7).fill("-")), null);
 
   // Increment turnNumber and update turnNumberDisplay after a valid move
   turnNumber++;
@@ -303,14 +310,19 @@ function computerMove() {
   let bestMove = -1;
   let bestValue = -Infinity;
   const startTime = performance.now();
-  const timeLimit = 3000; // Modify this value to set the time limit in milliseconds
-
+  const timeLimit = 3000;
+  let depth = 1;
+  
   let dynamicMaxDepth = parseInt(difficultySlider.value);
   if (getTurnNumber() >= 4) {
     dynamicMaxDepth += 2;
   }
 
-  let depth = 1;
+  // Create an array to store the scores for each cell
+  let cellScores = [];
+  for (let i = 0; i < 6; i++) {
+    cellScores[i] = new Array(7).fill('-');
+  }
 
   while (depth <= dynamicMaxDepth) {
     searchDepthDisplay.textContent = depth;
@@ -331,10 +343,23 @@ function computerMove() {
       break;
     }
 
+    // Calculate and store the scores for each cell
+    const currentBoardValue = evaluateBoard();
+    for (let col = 0; col < 7; col++) {
+      const cell = findLowestEmptyCell(col);
+      if (cell) {
+        makeMove(cell, currentPlayer);
+        const row = parseInt(cell.getAttribute("data-row"));
+        const newBoardValue = evaluateBoard();
+        // Store the difference between the new board value and the current board value
+        cellScores[row][col] = newBoardValue - currentBoardValue;
+        undoMove(cell);
+      }
+    }
+
     depth++;
   }
-  console.log(`Selected move: ${bestMove}, Evaluation value: ${bestValue}`);
-  
+
   if (bestMove === -1) {
     const availableMoves = getAvailableMoves();
     if (availableMoves.length > 0) {
@@ -346,7 +371,8 @@ function computerMove() {
   }
 
   const bestCell = findLowestEmptyCell(bestMove);
-  makeMove(bestCell, currentPlayer);
+makeMove(bestCell, currentPlayer);
+logBoard(bestMove, currentPlayer, cellScores, bestValue)
 }
 
 // Determine the best move using the alpha-beta pruning algorithm
@@ -361,22 +387,34 @@ function alphaBetaMove(player, alpha, beta, depth, isRoot = false) {
     return { move: -1, value: depth === MAX_DEPTH ? -1 : evaluateBoard() };
   }
 
+  let bestMove = -1;
+
   if (isRoot) {
-    // Sort available moves based on their heuristic values for the root node
-    availableMoves = availableMoves.sort((moveA, moveB) => {
-      const cellA = findLowestEmptyCell(moveA);
-      const cellB = findLowestEmptyCell(moveB);
-      makeMove(cellA, player);
-      makeMove(cellB, player);
-      const valueA = evaluateBoard();
-      const valueB = evaluateBoard();
-      undoMove(cellA);
-      undoMove(cellB);
-      return valueB - valueA;
-    });
+  let bestMoveValueWithRandomWeight = -Infinity;
+
+  for (const move of availableMoves) {
+    const cell = findLowestEmptyCell(move);
+    makeMove(cell, player);
+    const result = alphaBetaMove("X", alpha, beta, depth - 1);
+    undoMove(cell);
+
+    // Add random weight to the evaluation value
+    const randomWeight = Math.random();
+    const valueWithRandomWeight = result.value + randomWeight;
+
+    if (valueWithRandomWeight > bestMoveValueWithRandomWeight) {
+      bestMoveValueWithRandomWeight = valueWithRandomWeight;
+      bestMove = move;
+    }
+
+    alpha = Math.max(alpha, result.value);
+    if (beta <= alpha) {
+      break;
+    }
   }
 
-  let bestMove = -1;
+  return { move: bestMove, value: alpha };
+}
 
   if (player === "O") {
     let maxEval = -Infinity;
@@ -415,17 +453,26 @@ function alphaBetaMove(player, alpha, beta, depth, isRoot = false) {
   }
 }
 
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
 // Evaluate the board to determine the score for the current state
 function evaluateBoard() {
   const playerXScore = getScore("X");
   const playerOScore = getScore("O");
 
-  const blockingWeight = 1000; // Adjust this value to prioritize blocking the player's winning moves
+  const blockingWeight = 1000;
+  const winningWeight = 10000; // Use a large positive value for winning moves
 
   if (playerOScore >= 1000) {
-    return Infinity;
+    return winningWeight; // Return the large positive weight when the AI has a winning move
   } else if (playerXScore >= 1000) {
-    return -Infinity;
+    return -winningWeight; // Return the large negative weight when the player has a winning move
   } else {
     return playerOScore - blockingWeight * playerXScore;
   }
@@ -435,8 +482,8 @@ function getScore(player) {
   let score = 0;
   const scoreTable = {
     2: 10,
-    3: 100,
-    4: 1000,
+    3: 1000,
+    4: 10000,
   };
 
   // Calculate scores for rows, columns, and diagonals
@@ -588,4 +635,21 @@ function getTurnNumber() {
     (cell) => cell.getAttribute("data-player") !== null
   );
   return nonEmptyCells.length;
+}
+
+function logBoard(move, player, cellScores, chosenMoveScore) {
+  const boardArray = [];
+  for (let row = 0; row < 6; row++) {
+    const rowArray = [];
+    for (let col = 0; col < 7; col++) {
+      const cell = cells[row * 7 + col];
+      const cellPlayer = cell.getAttribute("data-player");
+      const cellValue = cellPlayer ? cellPlayer : cellScores[row][col];
+      rowArray.push(cellValue);
+    }
+    boardArray.push(rowArray);
+  }
+
+  console.log(`Player ${player}'s move: ${move}, Score: ${chosenMoveScore}`);
+  console.table(boardArray);
 }
