@@ -14,15 +14,25 @@ const gameModeLabels = document.querySelectorAll(".toggle-label");
 const resetButton = document.getElementById("resetButton");
 const difficultySlider = document.getElementById("difficultySlider");
 const difficultyValue = document.getElementById("difficultyValue");
+const turnNumberDisplay = document.getElementById("turnNumberDisplay");
+const searchDepthDisplay = document.getElementById("searchDepthDisplay");
+const maxDepthDisplay = document.getElementById("maxDepthDisplay");
 
 // Initialize variables for game depth, wins, current player, and game mode
-let MAX_DEPTH = 4;
+let MAX_DEPTH = 5; // You can initialize with the default value of 4
 difficultySlider.addEventListener("input", handleSliderChange);
+
+let turnNumber = 0;
+
+turnNumberDisplay.textContent = turnNumber;
+searchDepthDisplay.textContent = 0; // Initialize with 0 as the initial search depth
+maxDepthDisplay.textContent = MAX_DEPTH;
 
 // Update the MAX_DEPTH value when the slider is changed
 function handleSliderChange() {
   MAX_DEPTH = difficultySlider.value;
   difficultyValue.textContent = MAX_DEPTH;
+  maxDepthDisplay.textContent = MAX_DEPTH;
 }
 
 let winsX = 0;
@@ -63,13 +73,12 @@ function handleGameModeChange() {
 
 // Show a message indicating whose turn it is
 function showTurnMessage(player) {
-  // Set the text and background color based on the current player
   turnMessage.textContent = `Player ${player}'s turn`;
+
   turnMessage.style.backgroundColor = player === "X" ? "#4e73df" : "#f93154";
   turnMessage.style.animation = "fadeIn 0.5s, fadeOut 0.5s 1.5s";
   turnMessage.style.opacity = "1";
 
-  // Hide the message after 2 seconds
   setTimeout(() => {
     turnMessage.style.opacity = "0";
   }, 2000);
@@ -102,7 +111,6 @@ function hideWinningMessage() {
 
 // Check if the given player has won the game
 function checkWin(player) {
-  // Check rows, columns, and diagonals for a win
   // Check rows
   for (let row = 0; row < 6; row++) {
     for (let col = 0; col < 4; col++) {
@@ -174,6 +182,11 @@ function resetBoard() {
   });
 }
 
+function resetTurnNumber() {
+  turnNumber = 0;
+  turnNumberDisplay.textContent = turnNumber;
+}
+
 // Check if the game is a draw
 function isDraw() {
   const availableMoves = getAvailableMoves();
@@ -211,6 +224,10 @@ function handleCellClick(event) {
 
   makeMove(cell, currentPlayer);
 
+  // Increment turnNumber and update turnNumberDisplay after a valid move
+  turnNumber++;
+  turnNumberDisplay.textContent = turnNumber;
+
   if (checkWin(currentPlayer)) {
     showWinningMessage(currentPlayer);
   } else if (isDraw()) {
@@ -220,17 +237,20 @@ function handleCellClick(event) {
     currentPlayer = currentPlayer === "X" ? "O" : "X";
 
     if (gameMode === "computer" && currentPlayer === "O") {
-      computerMove();
+      // Add a delay before the computer's move to display the player's move first
+      setTimeout(() => {
+        computerMove();
 
-      if (checkWin(currentPlayer)) {
-        showWinningMessage(currentPlayer);
-      } else if (isDraw()) {
-        showDrawMessage();
-      } else {
-        toggleActivePlayer();
-        currentPlayer = "X";
-        showTurnMessage(currentPlayer);
-      }
+        if (checkWin(currentPlayer)) {
+          showWinningMessage(currentPlayer);
+        } else if (isDraw()) {
+          showDrawMessage();
+        } else {
+          toggleActivePlayer();
+          currentPlayer = "X";
+          showTurnMessage(currentPlayer);
+        }
+      }, 100); // You can adjust the delay time (in milliseconds) according to your preference
     } else {
       showTurnMessage(currentPlayer);
     }
@@ -241,6 +261,7 @@ function handleCellClick(event) {
 function handleOkButtonClick() {
   hideWinningMessage();
   resetBoard();
+  resetTurnNumber();
 
   if (currentPlayer === "O") {
     toggleActivePlayer();
@@ -254,6 +275,7 @@ function handleOkButtonClick() {
 function handleResetButtonClick() {
   resetBoard();
   resetScore();
+  resetTurnNumber();
 
   if (currentPlayer === "O") {
     toggleActivePlayer();
@@ -281,11 +303,38 @@ function computerMove() {
   let bestMove = -1;
   let bestValue = -Infinity;
   const startTime = performance.now();
-  const timeLimit = 8000; // 8 seconds in milliseconds
+  const timeLimit = 3000; // Modify this value to set the time limit in milliseconds
+
+  // Adjust dynamicMaxDepth based on the current turn number and slider value
+  const turnNumber = getTurnNumber();
+  let dynamicMaxDepth = parseInt(difficultySlider.value); // Use the current slider value instead of MAX_DEPTH
+  if (turnNumber >= 4) {
+    dynamicMaxDepth += 2; // Increase depth for turns 4 and above
+  }
+
   let depth = 1;
 
-  while (true) {
+  while (depth <= dynamicMaxDepth) {
     // Perform search with the current depth
+    searchDepthDisplay.textContent = depth;
+    const result = alphaBetaMove(currentPlayer, -Infinity, Infinity, depth);function computerMove() {
+  let bestMove = -1;
+  let bestValue = -Infinity;
+  const startTime = performance.now();
+  const timeLimit = 3000; // Modify this value to set the time limit in milliseconds
+
+  // Adjust dynamicMaxDepth based on the current turn number and slider value
+  const turnNumber = getTurnNumber();
+  let dynamicMaxDepth = parseInt(difficultySlider.value); // Use the current slider value instead of MAX_DEPTH
+  if (turnNumber >= 4) {
+    dynamicMaxDepth += 2; // Increase depth for turns 4 and above
+  }
+
+  let depth = 1;
+
+  while (depth <= dynamicMaxDepth) {
+    // Perform search with the current depth
+    searchDepthDisplay.textContent = depth;
     const result = alphaBetaMove(currentPlayer, -Infinity, Infinity, depth);
     const currentValue = result.value;
 
@@ -324,17 +373,58 @@ function computerMove() {
   const bestCell = findLowestEmptyCell(bestMove);
   makeMove(bestCell, currentPlayer);
 }
+    const currentValue = result.value;
+
+    if (currentValue > bestValue) {
+      bestValue = currentValue;
+      bestMove = result.move;
+    }
+
+    // If a winning move is found, stop the search
+    if (bestValue === Infinity) {
+      break;
+    }
+
+    // Check if the time limit is exceeded
+    const elapsedTime = performance.now() - startTime;
+    if (elapsedTime > timeLimit) {
+      break;
+    }
+
+    // Increase the depth for the next iteration
+    depth++;
+  }
+
+    // Log the selected move and its evaluation value
+  console.log(`Selected move: ${bestMove}, Evaluation value: ${bestValue}`);
+  
+  if (bestMove === -1) {
+    console.log("No valid move found.");
+    // Choose a random available move when the bestMove is -1
+    const availableMoves = getAvailableMoves();
+    
+    if (availableMoves.length > 0) {
+      const randomMove = availableMoves[Math.floor(Math.random() * availableMoves.length)];
+      const randomCell = findLowestEmptyCell(randomMove);
+      makeMove(randomCell, currentPlayer);
+    }
+    return;
+  }
+
+  const bestCell = findLowestEmptyCell(bestMove);
+  makeMove(bestCell, currentPlayer);
+}
 
 // Determine the best move using the alpha-beta pruning algorithm
 function alphaBetaMove(player, alpha, beta, depth) {
   if (depth === 0 || checkWin("X") || checkWin("O")) {
-    return evaluateBoard();
+    return { move: -1, value: evaluateBoard() };
   }
 
   const availableMoves = getAvailableMoves();
 
   if (availableMoves.length === 0) {
-    return depth === MAX_DEPTH ? -1 : evaluateBoard();
+    return { move: -1, value: depth === MAX_DEPTH ? -1 : evaluateBoard() };
   }
 
   let bestMove = -1;
@@ -344,36 +434,36 @@ function alphaBetaMove(player, alpha, beta, depth) {
     for (const move of availableMoves) {
       const cell = findLowestEmptyCell(move);
       makeMove(cell, player);
-      const eval = alphaBetaMove("X", alpha, beta, depth - 1);
+      const result = alphaBetaMove("X", alpha, beta, depth - 1);
       undoMove(cell);
-      if (eval > maxEval) {
-        maxEval = eval;
+      if (result.value > maxEval) {
+        maxEval = result.value;
         bestMove = move;
       }
-      alpha = Math.max(alpha, eval);
+      alpha = Math.max(alpha, result.value);
       if (beta <= alpha) {
         break;
       }
     }
+    return { move: bestMove, value: alpha };
   } else {
     let minEval = Infinity;
     for (const move of availableMoves) {
       const cell = findLowestEmptyCell(move);
       makeMove(cell, player);
-      const eval = alphaBetaMove("O", alpha, beta, depth - 1);
+      const result = alphaBetaMove("O", alpha, beta, depth - 1);
       undoMove(cell);
-      if (eval < minEval) {
-        minEval = eval;
+      if (result.value < minEval) {
+        minEval = result.value;
         bestMove = move;
       }
-      beta = Math.min(beta, eval);
+      beta = Math.min(beta, result.value);
       if (beta <= alpha) {
         break;
       }
     }
+    return { move: bestMove, value: beta };
   }
-
-  return depth === MAX_DEPTH ? bestMove : player === "O" ? alpha : beta;
 }
 
 // Evaluate the board to determine the score for the current state
@@ -381,15 +471,14 @@ function evaluateBoard() {
   const playerXScore = getScore("X");
   const playerOScore = getScore("O");
 
-  const randomRange = 20; // Adjust this value to change the randomness
-  const randomFactor = Math.floor(Math.random() * (2 * randomRange + 1)) - randomRange;
+  const blockingWeight = 1000; // Adjust this value to prioritize blocking the player's winning moves
 
   if (playerOScore >= 1000) {
     return Infinity;
   } else if (playerXScore >= 1000) {
     return -Infinity;
   } else {
-    return playerOScore - playerXScore + randomFactor;
+    return playerOScore - blockingWeight * playerXScore;
   }
 }
 
@@ -467,17 +556,27 @@ function getDiagScore(player, scoreTable) {
 
 function countConnectedPieces(index, step, player) {
   let count = 0;
+  let emptySpaces = 0;
 
   for (let i = 0; i < 4; i++) {
     const currentIndex = index + i * step;
     if (currentIndex < 0 || currentIndex >= cells.length) {
       break;
     }
-    if (cells[currentIndex].getAttribute("data-player") === player) {
+    const cellPlayer = cells[currentIndex].getAttribute("data-player");
+    if (cellPlayer === player) {
       count += 1;
+    } else if (cellPlayer === null) {
+      emptySpaces += 1;
+      break;
     } else {
       break;
     }
+  }
+
+  // If there are empty spaces, decrease the count by 1
+  if (emptySpaces > 0) {
+    count -= 1;
   }
 
   return count;
@@ -491,6 +590,13 @@ function getAvailableMoves() {
       availableMoves.push(col);
     }
   }
+
+  // Shuffle the available moves array
+  for (let i = availableMoves.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [availableMoves[i], availableMoves[j]] = [availableMoves[j], availableMoves[i]];
+  }
+
   return availableMoves;
 }
 
@@ -526,4 +632,11 @@ function updateLabelColors() {
     playerXName.classList.remove("active-player");
     playerOName.classList.add("active-player");
   }
+}
+
+function getTurnNumber() {
+  let nonEmptyCells = Array.from(cells).filter(
+    (cell) => cell.getAttribute("data-player") !== null
+  );
+  return nonEmptyCells.length;
 }
