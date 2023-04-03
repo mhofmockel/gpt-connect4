@@ -390,31 +390,31 @@ function alphaBetaMove(player, alpha, beta, depth, isRoot = false) {
   let bestMove = -1;
 
   if (isRoot) {
-  let bestMoveValueWithRandomWeight = -Infinity;
+    let bestMoveValue = -Infinity;
 
-  for (const move of availableMoves) {
-    const cell = findLowestEmptyCell(move);
-    makeMove(cell, player);
-    const result = alphaBetaMove("X", alpha, beta, depth - 1);
-    undoMove(cell);
+    for (const move of availableMoves) {
+      const cell = findLowestEmptyCell(move);
+      makeMove(cell, player);
+      const result = alphaBetaMove("X", alpha, beta, depth - 1);
+      undoMove(cell);
 
-    // Add random weight to the evaluation value
-    const randomWeight = Math.random();
-    const valueWithRandomWeight = result.value + randomWeight;
+      if (result.value > bestMoveValue) {
+        bestMoveValue = result.value;
+        bestMove = move;
+      }
 
-    if (valueWithRandomWeight > bestMoveValueWithRandomWeight) {
-      bestMoveValueWithRandomWeight = valueWithRandomWeight;
-      bestMove = move;
+      console.log(`AI's move: ${move}, Value: ${result.value}`); // Log the AI's move and score
+
+      alpha = Math.max(alpha, result.value);
+      if (beta <= alpha) {
+        break;
+      }
     }
 
-    alpha = Math.max(alpha, result.value);
-    if (beta <= alpha) {
-      break;
-    }
+    console.log(`AI's best move: ${bestMove}, Value: ${alpha}`); // Log the AI's best move and score
+
+    return { move: bestMove, value: alpha };
   }
-
-  return { move: bestMove, value: alpha };
-}
 
   if (player === "O") {
     let maxEval = -Infinity;
@@ -477,12 +477,9 @@ function evaluateBoard() {
   if (playerOScore >= 1000) {
     return winningWeight; // AI has a winning move
   } else if (playerXScore >= 1000) {
-    return -winningWeight; // Player has a winning move
+    return -blockingWeight; // Player has a winning move, prioritize blocking
   } else {
-    return (
-      potentialPlayerOWeight * potentialPlayerOScore -
-      potentialPlayerXWeight * potentialPlayerXScore
-    );
+    return getPotentialNextTurnScore("O") - getPotentialNextTurnScore("X");
   }
 }
 
