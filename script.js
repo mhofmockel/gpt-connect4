@@ -17,9 +17,11 @@ const difficultyValue = document.getElementById("difficultyValue");
 const turnNumberDisplay = document.getElementById("turnNumberDisplay");
 const searchDepthDisplay = document.getElementById("searchDepthDisplay");
 const maxDepthDisplay = document.getElementById("maxDepthDisplay");
+const winning = 2000;
+
 
 // Initialize variables for game depth, wins, current player, and game mode
-let MAX_DEPTH = 5; // You can initialize with the default value of 4
+let MAX_DEPTH = 1; // You can initialize with the default value of 4
 difficultySlider.addEventListener("input", handleSliderChange);
 
 let turnNumber = 0;
@@ -30,7 +32,7 @@ maxDepthDisplay.textContent = MAX_DEPTH;
 
 // Update the MAX_DEPTH value when the slider is changed
 function handleSliderChange() {
-  MAX_DEPTH = difficultySlider.value;
+  MAX_DEPTH = 1; //difficultySlider.value;
   difficultyValue.textContent = MAX_DEPTH;
   maxDepthDisplay.textContent = MAX_DEPTH;
 }
@@ -314,7 +316,7 @@ function computerMove() {
   let depth = 1;
   
   let dynamicMaxDepth = parseInt(difficultySlider.value);
-  if (getTurnNumber() >= 4) {
+  if (getTurnNumber() >= 40) {
     dynamicMaxDepth += 2;
   }
 
@@ -389,8 +391,9 @@ function alphaBetaMove(player, alpha, beta, depth, isRoot = false) {
 
   let bestMove = -1;
 
-  if (isRoot) {
+ if (isRoot) {
     let bestMoveValue = -Infinity;
+    const moveScores = []; // Store the scores of available moves
 
     for (const move of availableMoves) {
       const cell = findLowestEmptyCell(move);
@@ -403,13 +406,15 @@ function alphaBetaMove(player, alpha, beta, depth, isRoot = false) {
         bestMove = move;
       }
 
-      console.log(`AI's move: ${move}, Value: ${result.value}`); // Log the AI's move and score
+      moveScores.push(result.value); // Add the score to moveScores array
 
       alpha = Math.max(alpha, result.value);
       if (beta <= alpha) {
         break;
       }
     }
+
+    logAIScores(availableMoves, moveScores); // Log the AI's moves and their scores
 
     console.log(`AI's best move: ${bestMove}, Value: ${alpha}`); // Log the AI's best move and score
 
@@ -453,40 +458,49 @@ function alphaBetaMove(player, alpha, beta, depth, isRoot = false) {
   }
 }
 
-function shuffleArray(array) {
+/*function shuffleArray(array) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [array[i], array[j]] = [array[j], array[i]];
   }
   return array;
-}
+}*/
 
 // Evaluate the board to determine the score for the current state
 function evaluateBoard() {
-  const playerXScore = getScore("X");
-  const playerOScore = getScore("O");
+  const playerXImmediateScore = getImmediateThreatScore("X");
+  const playerOImmediateScore = getImmediateThreatScore("O");
 
   const potentialPlayerXScore = getPotentialNextTurnScore("X");
   const potentialPlayerOScore = getPotentialNextTurnScore("O");
 
-  const blockingWeight = 1000;
+  const blockingWeight = 1500;
   const winningWeight = 10000; // Use a large positive value for winning moves
-  const potentialPlayerXWeight = 3;
-  const potentialPlayerOWeight = 1;
+  const potentialPlayerXWeight = 4;
+  const potentialPlayerOWeight = 2;
 
-  if (playerOScore >= 1000) {
+  if (playerOImmediateScore >= winning) {
+    console.log("AI has a winning move");
     return winningWeight; // AI has a winning move
-  } else if (playerXScore >= 1000) {
-    return -blockingWeight; // Player has a winning move, prioritize blocking
+  } else if (playerXImmediateScore >= winning) {
+    console.log("Player has a winning move, prioritize blocking");
+    return -winningWeight; // Player has a winning move, prioritize blocking
   } else {
-    return getPotentialNextTurnScore("O") - getPotentialNextTurnScore("X");
+     const score = potentialPlayerOScore - potentialPlayerXScore;
+    console.log("AI score components:");
+    console.log("Player X Immediate Score:", playerXImmediateScore);
+    console.log("Player O Immediate Score:", playerOImmediateScore);
+    console.log("Potential Player X Score:", potentialPlayerXScore);
+    console.log("Potential Player O Score:", potentialPlayerOScore);
+    console.log("Total Score:", score);
+    return score;
   }
 }
 
 // Calculate the potential score for the player in the next turn
 function getPotentialNextTurnScore(player) {
   let potentialScore = 0;
-  const immediateThreatWeight = 3;
+  const immediateThreatWeight = 4;
   const nextTurnThreatWeight = 1;
 
   for (let col = 0; col < 7; col++) {
@@ -496,6 +510,10 @@ function getPotentialNextTurnScore(player) {
       makeMove(cell, player);
       const immediateThreatScore = getScore(player);
       undoMove(cell);
+            // Skip the player's winning move
+      if (player === "O" && immediateThreatScore >= winning) {
+        continue;
+      }
 
       // Calculate the potential threat score for the next turn
       let nextTurnThreatScore = 0;
@@ -515,12 +533,30 @@ function getPotentialNextTurnScore(player) {
   return potentialScore;
 }
 
+function getImmediateThreatScore(player) {
+  let immediateScore = 0;
+
+  for (let col = 0; col < 7; col++) {
+    const cell = findLowestEmptyCell(col);
+    if (cell) {
+      // Calculate the immediate threat score
+      makeMove(cell, player);
+      const immediateThreatScore = getScore(player);
+      undoMove(cell);
+
+      immediateScore += immediateThreatScore;
+    }
+  }
+
+  return immediateScore;
+}
+
 function getScore(player) {
   let score = 0;
   const scoreTable = {
-    2: 10,
-    3: 1000,
-    4: 10000,
+    2: 20,
+    3: 200,
+    4: winning,
   };
 
   // Calculate scores for rows, columns, and diagonals
@@ -689,4 +725,15 @@ function logBoard(move, player, cellScores, chosenMoveScore) {
 
   console.log(`Player ${player}'s move: ${move}, Score: ${chosenMoveScore}`);
   console.table(boardArray);
+}
+
+function logAIScores(availableMoves, moveScores) {
+  const sortedMoves = availableMoves
+    .map((move, index) => ({
+      Move: move,
+      Score: moveScores[index]
+    }))
+    .sort((a, b) => a.Move - b.Move);
+
+  console.table(sortedMoves);
 }
