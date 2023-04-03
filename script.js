@@ -462,20 +462,27 @@ function shuffleArray(array) {
 }
 
 // Evaluate the board to determine the score for the current state
-// Evaluate the board to determine the score for the current state
 function evaluateBoard() {
-  const playerXScore = getScore("X") + getPotentialNextTurnScore("X");
-  const playerOScore = getScore("O") + getPotentialNextTurnScore("O");
+  const playerXScore = getScore("X");
+  const playerOScore = getScore("O");
+
+  const potentialPlayerXScore = getPotentialNextTurnScore("X");
+  const potentialPlayerOScore = getPotentialNextTurnScore("O");
 
   const blockingWeight = 1000;
   const winningWeight = 10000; // Use a large positive value for winning moves
+  const potentialPlayerXWeight = 3;
+  const potentialPlayerOWeight = 1;
 
   if (playerOScore >= 1000) {
-    return winningWeight; // Return the large positive weight when the AI has a winning move
+    return winningWeight; // AI has a winning move
   } else if (playerXScore >= 1000) {
-    return -winningWeight; // Return the large negative weight when the player has a winning move
+    return -winningWeight; // Player has a winning move
   } else {
-    return playerOScore - blockingWeight * playerXScore;
+    return (
+      potentialPlayerOWeight * potentialPlayerOScore -
+      potentialPlayerXWeight * potentialPlayerXScore
+    );
   }
 }
 
