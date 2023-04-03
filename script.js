@@ -462,9 +462,10 @@ function shuffleArray(array) {
 }
 
 // Evaluate the board to determine the score for the current state
+// Evaluate the board to determine the score for the current state
 function evaluateBoard() {
-  const playerXScore = getScore("X");
-  const playerOScore = getScore("O");
+  const playerXScore = getScore("X") + getPotentialNextTurnScore("X");
+  const playerOScore = getScore("O") + getPotentialNextTurnScore("O");
 
   const blockingWeight = 1000;
   const winningWeight = 10000; // Use a large positive value for winning moves
@@ -476,6 +477,38 @@ function evaluateBoard() {
   } else {
     return playerOScore - blockingWeight * playerXScore;
   }
+}
+
+// Calculate the potential score for the player in the next turn
+function getPotentialNextTurnScore(player) {
+  let potentialScore = 0;
+  const immediateThreatWeight = 3;
+  const nextTurnThreatWeight = 1;
+
+  for (let col = 0; col < 7; col++) {
+    const cell = findLowestEmptyCell(col);
+    if (cell) {
+      // Calculate the immediate threat score
+      makeMove(cell, player);
+      const immediateThreatScore = getScore(player);
+      undoMove(cell);
+
+      // Calculate the potential threat score for the next turn
+      let nextTurnThreatScore = 0;
+      const nextCell = findLowestEmptyCell(col);
+      if (nextCell) {
+        makeMove(nextCell, player);
+        nextTurnThreatScore = getScore(player);
+        undoMove(nextCell);
+      }
+
+      potentialScore +=
+        immediateThreatWeight * immediateThreatScore +
+        nextTurnThreatWeight * nextTurnThreatScore;
+    }
+  }
+
+  return potentialScore;
 }
 
 function getScore(player) {
