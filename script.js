@@ -1,11 +1,13 @@
 const game_grid = Array.from({length: 7}, () => Array(6).fill(null));
 
 const player1 = {
-  color: 'red'
+  color: 'red',
+  isAI: false
 };
 
 const player2 = {
-  color: 'blue'
+  color: 'blue',
+  isAI: true
 };
 
 const game = {
@@ -78,6 +80,50 @@ const game = {
   reset_game: function() {
     this.board = game_grid.map(col => col.fill(null));
     this.paint_board();
+  },
+ make_random_move: function() {
+    const availableColumns = this.board
+      .map((col, index) => (col.includes(null) ? index : -1))
+      .filter(index => index !== -1);
+    const randomColumnIndex = availableColumns[Math.floor(Math.random() * availableColumns.length)];
+    this.place_chip(randomColumnIndex);
+  },
+
+  paint_board: function() {
+    const boardElement = document.getElementById('board');
+    boardElement.innerHTML = '';
+    this.board.forEach((column, columnIndex) => {
+      const columnElement = document.createElement('div');
+      columnElement.classList.add('column');
+
+      // Modify the column click event listener to check if the current player is AI
+      columnElement.addEventListener('click', () => {
+        this.place_chip(columnIndex);
+        if (this.currentPlayer.isAI) {
+          setTimeout(() => {
+            this.make_random_move();
+          }, 500);
+        }
+      });
+
+      column.forEach(cell => {
+        const cellElement = document.createElement('div');
+        cellElement.classList.add('cell');
+        if (cell) {
+          cellElement.style.backgroundColor = cell.color;
+        }
+        columnElement.appendChild(cellElement);
+      });
+
+      boardElement.appendChild(columnElement);
+    });
+
+    // Call AI player's move after the initial paint_board call if the game starts with an AI player
+    if (this.currentPlayer.isAI) {
+      setTimeout(() => {
+        this.make_random_move();
+      }, 500);
+    }
   }
 };
 
