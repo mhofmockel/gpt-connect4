@@ -1,106 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="styles.css">
-  <link rel="preconnect" href="https://fonts.gstatic.com">
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" type="text/css" href="https://www.9thwonder.com/assets/fonts/Knockout-HTF67-FullBantamwt/Knockout-67FullBantamwt.eot" />
-  <title>CONNECT4</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect 4</title>
+    <style>
+        .board {
+            display: flex;
+            flex-direction: row;
+        }
+        .column {
+            display: flex;
+            flex-direction: column-reverse;
+            border: 1px solid black;
+            padding: 5px;
+            cursor: pointer;
+        }
+        .cell {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 1px solid black;
+            margin: 5px;
+        }
+    </style>
 </head>
 <body>
-  <div class="header">
-    <img src="https://cdn.agilitycms.com/9th-wonder/Attachments/NewItems/logo-pin_20190828033418_0.svg" alt="Logo" id="logo" />
-    <h1>CONNECT4</h1>
-  </div>
-  <div class="settings">
-    <div class="game-mode">
-      <p>Select Game Mode:</p>
-      <div class="toggle-container">
-        <label for="gameModeToggle" class="toggle-label left">P vs P</label>
-        <div class="toggle">
-          <input type="checkbox" id="gameModeToggle" class="toggle-checkbox">
-          <label for="gameModeToggle" class="toggle-switch"></label>
-        </div>
-        <label for="gameModeToggle" class="toggle-label right">P vs CPU</label>
-      </div>
-    </div>
-    <div class="difficulty-section">
-      <p>Difficulty:</p>
-      <div class="slider-container">
-        <input type="range" min="1" max="7" value="4" class="slider" id="difficultySlider">
-        <span id="difficultyValue">4</span>
-      </div>
-    </div>
-  </div>
-  <div class="board">
-    <div class="cell" data-row="0" data-col="0"></div>
-    <div class="cell" data-row="0" data-col="1"></div>
-    <div class="cell" data-row="0" data-col="2"></div>
-    <div class="cell" data-row="0" data-col="3"></div>
-    <div class="cell" data-row="0" data-col="4"></div>
-    <div class="cell" data-row="0" data-col="5"></div>
-    <div class="cell" data-row="0" data-col="6"></div>
-    <div class="cell" data-row="1" data-col="0"></div>
-    <div class="cell" data-row="1" data-col="1"></div>
-    <div class="cell" data-row="1" data-col="2"></div>
-    <div class="cell" data-row="1" data-col="3"></div>
-    <div class="cell" data-row="1" data-col="4"></div>
-    <div class="cell" data-row="1" data-col="5"></div>
-    <div class="cell" data-row="1" data-col="6"></div>
-    <div class="cell" data-row="2" data-col="0"></div>
-    <div class="cell" data-row="2" data-col="1"></div>
-    <div class="cell" data-row="2" data-col="2"></div>
-    <div class="cell" data-row="2" data-col="3"></div>
-    <div class="cell" data-row="2" data-col="4"></div>
-    <div class="cell" data-row="2" data-col="5"></div>
-    <div class="cell" data-row="2" data-col="6"></div>
-    <div class="cell" data-row="3" data-col="0"></div>
-    <div class="cell" data-row="3" data-col="1"></div>
-    <div class="cell" data-row="3" data-col="2"></div>
-    <div class="cell" data-row="3" data-col="3"></div>
-    <div class="cell" data-row="3" data-col="4"></div>
-    <div class="cell" data-row="3" data-col="5"></div>
-    <div class="cell" data-row="3" data-col="6"></div>
-    <div class="cell" data-row="4" data-col="0"></div>
-    <div class="cell" data-row="4" data-col="1"></div>
-    <div class="cell" data-row="4" data-col="2"></div>
-    <div class="cell" data-row="4" data-col="3"></div>
-    <div class="cell" data-row="4" data-col="4"></div>
-    <div class="cell" data-row="4" data-col="5"></div>
-    <div class="cell" data-row="4" data-col="6"></div>
-    <div class="cell" data-row="5" data-col="0"></div>
-    <div class="cell" data-row="5" data-col="1"></div>
-    <div class="cell" data-row="5" data-col="2"></div>
-    <div class="cell" data-row="5" data-col="3"></div>
-    <div class="cell" data-row="5" data-col="4"></div>
-    <div class="cell" data-row="5" data-col="5"></div>
-    <div class="cell" data-row="5" data-col="6"></div>
-  </div>
-  <div class="scoreboard">
-<div class="scoreboard">
-  <div class="score">
-    <div class="player-info">
-      <h3 class="player-x-name">Player 1</h3>
-      <p class="score-x">0</p>
-    </div>
-  </div>
-  <div class="score">
-    <div class="player-info">
-      <h3 class="player-o-name">Player 2</h3>
-      <p class="score-o">0</p>
-    </div>
-  </div>
-</div>
-  <button class="reset-button" id="resetButton">Reset</button>
-  <div class="message" id="winningMessage">
-    <div>
-      <p id="winningText"></p>
-      <button id="okButton">OK</button>
-    </div>
-  </div>
-  <div class="turn-message" id="turnMessage">Player X's turn</div>
-  <script src="script.js"></script>
+    <div class="board" id="board"></div>
+    <button onclick="game.reset_game()">Reset Game</button>
+    <script src="script.js"></script>
 </body>
 </html>
