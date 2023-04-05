@@ -140,8 +140,39 @@ const game = {
     return randomMove;
   },
 
-  make_ai_move: function () {
-    const bestMove = this.analyze_board();
+calculate_weights: function(board, currentPlayer, depth) {
+    if (depth === 0) return {};
+
+    const nextPlayer = currentPlayer === player1 ? player2 : player1;
+    const weights = {};
+
+    for (let col = 0; col < board.length; col++) {
+      const row = board[col].indexOf(null);
+      if (row === -1) continue;
+
+      board[col][row] = currentPlayer;
+
+      if (this.check_for_win(col, row)) {
+        weights[col] = currentPlayer.isAI ? 1 : -1;
+      } else {
+        const childWeights = this.calculate_weights(board, nextPlayer, depth - 1);
+        weights[col] = Object.values(childWeights).reduce((sum, weight) => sum + weight, 0);
+      }
+
+      board[col][row] = null;
+    }
+
+    return weights;
+  },
+
+  make_ai_move: function() {
+    const depth = 4; // Define the desired depth
+    const weights = this.calculate_weights(this.board, this.currentPlayer, depth);
+    const maxWeight = Math.max(...Object.values(weights));
+
+    const bestMoves = Object.keys(weights).filter(col => weights[col] === maxWeight);
+    const bestMove = parseInt(bestMoves[Math.floor(Math.random() * bestMoves.length)]);
+
     this.place_chip(bestMove);
   },
 
