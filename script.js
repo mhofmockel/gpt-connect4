@@ -147,7 +147,16 @@ const game = {
     return randomMove;
   },
 
-calculate_weights: function(board, currentPlayer, depth, initialDepth) {
+is_missed_win: function(board, moveHistory, currentPlayer) {
+  if (moveHistory.length !== 3) return false;
+  if (moveHistory[0].player !== currentPlayer || moveHistory[2].player !== currentPlayer) return false;
+  if (moveHistory[0].column === moveHistory[2].column && moveHistory[1].player !== currentPlayer) {
+    return true;
+  }
+  return false;
+},
+
+calculate_weights: function(board, currentPlayer, depth, initialDepth, moveHistory = []) {
   if (depth === 0) return {};
 
   if (typeof initialDepth === 'undefined') {
@@ -163,16 +172,19 @@ calculate_weights: function(board, currentPlayer, depth, initialDepth) {
     if (row === -1) continue;
 
     board[col][row] = currentPlayer;
+    moveHistory.push({ player: currentPlayer, column: col });
 
     if (this.check_for_win(col, row)) {
-      weights[col] = currentPlayer.isAI ? 1 : -1;
-      weights[col] *= Math.pow(availableColumns, initialDepth - depth); // Apply the weight factor
+      const missedWin = this.is_missed_win(board, moveHistory, currentPlayer);
+      weights[col] = currentPlayer.isAI && !missedWin ? 1 : -1;
+      weights[col] *= Math.pow(availableColumns, initialDepth - depth);
     } else {
-      const childWeights = this.calculate_weights(board, nextPlayer, depth - 1, initialDepth);
+      const childWeights = this.calculate_weights(board, nextPlayer, depth - 1, initialDepth, moveHistory.slice());
       weights[col] = Object.values(childWeights).reduce((sum, weight) => sum + weight, 0);
     }
 
     board[col][row] = null;
+    moveHistory.pop();
   }
 
   // Only log the weights array when at the top level of depth
@@ -189,15 +201,17 @@ calculate_weights: function(board, currentPlayer, depth, initialDepth) {
 },
 
   make_ai_move: function() {
-    const depth = 4; // Define the desired depth
-    const weights = this.calculate_weights(this.board, this.currentPlayer, depth);
-    const maxWeight = Math.max(...Object.values(weights));
+  const depth = 4; // Define the desired depth
+  const weights = this.calculate_weights(this.board, this.currentPlayer, depth);
+  const maxWeight = Math.max(...Object.values(weights));
 
-    const bestMoves = Object.keys(weights).filter(col => weights[col] === maxWeight);
-    const bestMove = parseInt(bestMoves[Math.floor(Math.random() * bestMoves.length)]);
+  const bestMoves = Object.keys(weights).filter(col => weights[col] === maxWeight);
+  const bestMove = parseInt(bestMoves[Math.floor(Math.random() * bestMoves.length)]);
 
-    this.place_chip(bestMove);
-  },
+  console.log(`AI chose column ${bestMove} with a score of ${weights[bestMove]}`); // Log the chosen move and its score
+
+  this.place_chip(bestMove);
+},
 
   isHumanMove: true,
 
