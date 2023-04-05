@@ -174,11 +174,14 @@ calculate_weights: function(board, currentPlayer, depth, initialDepth, moveHisto
     board[col][row] = currentPlayer;
     moveHistory.push({ player: currentPlayer, column: col });
 
-    if (this.check_for_win(col, row)) {
-      const missedWin = this.is_missed_win(board, moveHistory, currentPlayer);
-      weights[col] = currentPlayer.isAI && !missedWin ? 1 : -1;
-      weights[col] *= Math.pow(availableColumns, initialDepth - depth);
-    } else {
+      if (this.check_for_win(col, row)) {
+    const missedWin = this.is_missed_win(board, moveHistory, currentPlayer);
+    if (missedWin) {
+      console.log(`Missed win occurred in column ${col}, treating it as a loss`); // Log message when missed win occurs
+    }
+    weights[col] = currentPlayer.isAI && !missedWin ? 1 : -1;
+    weights[col] *= Math.pow(availableColumns, initialDepth - depth);
+  } else {
       const childWeights = this.calculate_weights(board, nextPlayer, depth - 1, initialDepth, moveHistory.slice());
       weights[col] = Object.values(childWeights).reduce((sum, weight) => sum + weight, 0);
     }
