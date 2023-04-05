@@ -81,12 +81,40 @@ const game = {
     this.board = game_grid.map(col => col.fill(null));
     this.paint_board();
   },
- make_random_move: function() {
+   analyze_board: function() {
+    const find_winning_move = (player) => {
+      for (let col = 0; col < this.board.length; col++) {
+        const row = this.board[col].indexOf(null);
+        if (row === -1) continue;
+        this.board[col][row] = player;
+        if (this.check_for_win(col, row)) {
+          this.board[col][row] = null;
+          return col;
+        }
+        this.board[col][row] = null;
+      }
+      return -1;
+    };
+
+    // Check for AI's winning move
+    const aiWinningMove = find_winning_move(this.currentPlayer);
+    if (aiWinningMove !== -1) return aiWinningMove;
+
+    // Check for human player's winning move to block
+    const humanPlayer = this.currentPlayer === player1 ? player2 : player1;
+    const humanWinningMove = find_winning_move(humanPlayer);
+    if (humanWinningMove !== -1) return humanWinningMove;
+
+    // Make a random move if no winning or blocking moves are found
     const availableColumns = this.board
       .map((col, index) => (col.includes(null) ? index : -1))
       .filter(index => index !== -1);
-    const randomColumnIndex = availableColumns[Math.floor(Math.random() * availableColumns.length)];
-    this.place_chip(randomColumnIndex);
+    return availableColumns[Math.floor(Math.random() * availableColumns.length)];
+  },
+
+  make_ai_move: function() {
+    const bestMove = this.analyze_board();
+    this.place_chip(bestMove);
   },
 
    isHumanMove: true,
@@ -98,7 +126,7 @@ const game = {
     if (this.currentPlayer.isAI) {
       this.isHumanMove = false; // Set flag to false before making AI move
       setTimeout(() => {
-        this.make_random_move();
+        this.make_ai_move();
         this.isHumanMove = true; // Set flag back to true after AI move is completed
       }, 500);
     }
