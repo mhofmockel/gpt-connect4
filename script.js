@@ -147,11 +147,16 @@ const game = {
     return randomMove;
   },
 
-calculate_weights: function(board, currentPlayer, depth) {
+calculate_weights: function(board, currentPlayer, depth, initialDepth) {
   if (depth === 0) return {};
+
+  if (typeof initialDepth === 'undefined') {
+    initialDepth = depth;
+  }
 
   const nextPlayer = currentPlayer === player1 ? player2 : player1;
   const weights = {};
+  const availableColumns = 7;
 
   for (let col = 0; col < board.length; col++) {
     const row = board[col].indexOf(null);
@@ -161,16 +166,17 @@ calculate_weights: function(board, currentPlayer, depth) {
 
     if (this.check_for_win(col, row)) {
       weights[col] = currentPlayer.isAI ? 1 : -1;
+      weights[col] *= Math.pow(availableColumns, initialDepth - depth); // Apply the weight factor
     } else {
-      const childWeights = this.calculate_weights(board, nextPlayer, depth - 1);
+      const childWeights = this.calculate_weights(board, nextPlayer, depth - 1, initialDepth);
       weights[col] = Object.values(childWeights).reduce((sum, weight) => sum + weight, 0);
     }
 
     board[col][row] = null;
   }
 
-  // Only log the weights array when at the top level of depth (i.e., depth is equal to its initial value)
-  if (depth === 4) {
+  // Only log the weights array when at the top level of depth
+  if (depth === initialDepth) {
     const weightsTable = Object.keys(weights).map(col => ({
       Depth: depth,
       Column: col,
