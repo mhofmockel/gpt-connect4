@@ -89,6 +89,15 @@ const game = {
     this.place_chip(randomColumnIndex);
   },
 
+ handle_player_move: function(columnIndex) {
+    this.place_chip(columnIndex);
+    if (this.currentPlayer.isAI) {
+      setTimeout(() => {
+        this.make_random_move();
+      }, 500);
+    }
+  },
+
   paint_board: function() {
     const boardElement = document.getElementById('board');
     boardElement.innerHTML = '';
@@ -96,14 +105,9 @@ const game = {
       const columnElement = document.createElement('div');
       columnElement.classList.add('column');
 
-      // Modify the column click event listener to check if the current player is AI
+      // Modify the column click event listener to call handle_player_move
       columnElement.addEventListener('click', () => {
-        this.place_chip(columnIndex);
-        if (this.currentPlayer.isAI) {
-          setTimeout(() => {
-            this.make_random_move();
-          }, 500);
-        }
+        this.handle_player_move(columnIndex);
       });
 
       column.forEach(cell => {
@@ -117,14 +121,14 @@ const game = {
 
       boardElement.appendChild(columnElement);
     });
-
-    // Call AI player's move after the initial paint_board call if the game starts with an AI player
-    if (this.currentPlayer.isAI) {
-      setTimeout(() => {
-        this.make_random_move();
-      }, 500);
-    }
   }
 };
 
 game.paint_board();
+
+// Call AI player's move after the initial paint_board call if the game starts with an AI player
+if (game.currentPlayer.isAI) {
+  setTimeout(() => {
+    game.make_random_move();
+  }, 500);
+}
