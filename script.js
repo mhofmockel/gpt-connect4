@@ -97,9 +97,16 @@ const game = {
       boardElement.appendChild(columnElement);
     });
   },
-  reset_game: function () {
-    this.board = game_grid.map((col) => col.fill(null));
+  reset_game: function() {
+    this.board = game_grid.map(col => col.fill(null));
     this.paint_board();
+
+    // Call AI player's move after resetting the game if the AI is the current player
+    if (this.currentPlayer.isAI) {
+      setTimeout(() => {
+        this.make_ai_move();
+      }, 500);
+    }
   },
    analyze_board: function() {
     const find_winning_move = (player) => {
@@ -221,9 +228,7 @@ game.paint_board();
 
 // Call AI player's move after the initial paint_board call if the game starts with an AI player
 if (game.currentPlayer.isAI) {
-  game.isHumanMove = false;
   setTimeout(() => {
-    game.make_random_move();
-    game.isHumanMove = true;
+    game.make_ai_move();
   }, 500);
 }
