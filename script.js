@@ -109,7 +109,8 @@ const game = {
       }, 500);
     }
   },
-   analyze_board: function() {
+//Not used for AI logic
+/*  analyze_board: function() {
     const find_winning_move = (player) => {
       for (let col = 0; col < this.board.length; col++) {
         const row = this.board[col].indexOf(null);
@@ -146,7 +147,7 @@ const game = {
     const randomMove = availableColumns[Math.floor(Math.random() * availableColumns.length)];
     console.log(`AI found no winning or blocking moves and chose a random move in column ${randomMove}`);
     return randomMove;
-  },
+  }, */
 
 calculate_weights: function(board, currentPlayer, depth) {
   if (depth === 0) return {};
