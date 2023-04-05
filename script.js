@@ -148,29 +148,39 @@ const game = {
   },
 
 calculate_weights: function(board, currentPlayer, depth) {
-    if (depth === 0) return {};
+  if (depth === 0) return {};
 
-    const nextPlayer = currentPlayer === player1 ? player2 : player1;
-    const weights = {};
+  const nextPlayer = currentPlayer === player1 ? player2 : player1;
+  const weights = {};
 
-    for (let col = 0; col < board.length; col++) {
-      const row = board[col].indexOf(null);
-      if (row === -1) continue;
+  for (let col = 0; col < board.length; col++) {
+    const row = board[col].indexOf(null);
+    if (row === -1) continue;
 
-      board[col][row] = currentPlayer;
+    board[col][row] = currentPlayer;
 
-      if (this.check_for_win(col, row)) {
-        weights[col] = currentPlayer.isAI ? 1 : -1;
-      } else {
-        const childWeights = this.calculate_weights(board, nextPlayer, depth - 1);
-        weights[col] = Object.values(childWeights).reduce((sum, weight) => sum + weight, 0);
-      }
-
-      board[col][row] = null;
+    if (this.check_for_win(col, row)) {
+      weights[col] = currentPlayer.isAI ? 1 : -1;
+    } else {
+      const childWeights = this.calculate_weights(board, nextPlayer, depth - 1);
+      weights[col] = Object.values(childWeights).reduce((sum, weight) => sum + weight, 0);
     }
 
-    return weights;
-  },
+    board[col][row] = null;
+  }
+
+  // Only log the weights array when at the top level of depth (i.e., depth is equal to its initial value)
+  if (depth === 4) {
+    const weightsTable = Object.keys(weights).map(col => ({
+      Depth: depth,
+      Column: col,
+      Weight: weights[col],
+    }));
+    console.table(weightsTable);
+  }
+
+  return weights;
+},
 
   make_ai_move: function() {
     const depth = 4; // Define the desired depth
