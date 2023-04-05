@@ -89,11 +89,17 @@ const game = {
     this.place_chip(randomColumnIndex);
   },
 
- handle_player_move: function(columnIndex) {
+   isHumanMove: true,
+
+  handle_player_move: function(columnIndex) {
+    if (!this.isHumanMove) return; // Prevent human from making moves for AI player
+
     this.place_chip(columnIndex);
     if (this.currentPlayer.isAI) {
+      this.isHumanMove = false; // Set flag to false before making AI move
       setTimeout(() => {
         this.make_random_move();
+        this.isHumanMove = true; // Set flag back to true after AI move is completed
       }, 500);
     }
   },
@@ -128,7 +134,9 @@ game.paint_board();
 
 // Call AI player's move after the initial paint_board call if the game starts with an AI player
 if (game.currentPlayer.isAI) {
+  game.isHumanMove = false;
   setTimeout(() => {
     game.make_random_move();
+    game.isHumanMove = true;
   }, 500);
 }
