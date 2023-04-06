@@ -149,7 +149,7 @@ const game = {
     return randomMove;
   }, */
 
-  calculate_weights: function(board, currentPlayer, depth) {
+  calculate_weights: function(board, currentPlayer, depth, moveHistory = []) {
     if (depth === 0) return {};
   
     const nextPlayer = currentPlayer === player1 ? player2 : player1;
@@ -162,15 +162,27 @@ const game = {
       if (row === -1) continue;
   
       board[col][row] = currentPlayer;
+      moveHistory.push(col);
   
       if (this.check_for_win(col, row)) {
-        weights[col] = currentPlayer.isAI ? weightFactor : -weightFactor;
+        let missedWin = false;
+        if (depth === maxDepth - 2 && currentPlayer.isAI) {
+          const round1Move = moveHistory[0];
+          const round3Move = moveHistory[2];
+          if (round1Move === round3Move && round1Move !== moveHistory[1]) {
+            missedWin = true;
+            console.log("Missed win at column", col);
+          }
+        }
+  
+        weights[col] = missedWin ? -weightFactor : (currentPlayer.isAI ? weightFactor : -weightFactor);
       } else {
-        const childWeights = this.calculate_weights(board, nextPlayer, depth - 1);
+        const childWeights = this.calculate_weights(board, nextPlayer, depth - 1, moveHistory.slice());
         weights[col] = Object.values(childWeights).reduce((sum, weight) => sum + weight, 0);
       }
   
       board[col][row] = null;
+      moveHistory.pop();
     }
   
     // Only log the weights array when at the top level of depth (i.e., depth is equal to its initial value)
