@@ -206,7 +206,7 @@ calculate_weights: function(board, currentPlayer, depth, moveHistory = []) {
     console.table(weightsTable);
   }
 
-  return forcedMove !== null ? { forcedMove } : weights;
+  return forcedMove !== null ? { [forcedMove]: Infinity } : weights;
 },
 
 make_ai_move: function() {
