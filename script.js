@@ -145,10 +145,10 @@ calculate_weights: function(board, currentPlayer, depth, moveHistory = [], force
   }
 
   // Check for the forced move condition at depth 2
-  if (depth === maxDepth - 2 && currentPlayer.isAI) {
+  if (depth === maxDepth - 2 && !currentPlayer.isAI) {
     const positiveColumns = Object.keys(weights).filter(col => weights[col] > 0);
     if (positiveColumns.length === 1) {
-      console.log("AI Block at depth 2, column", positiveColumns[0]);
+      console.log("Forced move at depth 2, column", positiveColumns[0]);
       forcedMove = parseInt(positiveColumns[0]);
       foundForcedMove = true;
     }
