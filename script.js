@@ -110,85 +110,80 @@ const game = {
     }
   },
 
-  calculate_weights: function (
-    board,
-    currentPlayer,
-    depth,
-    moveHistory = [],
-    forcedMove = null
-  ) {
-    if (depth === 0) return {};
+calculate_weights: function(board, currentPlayer, depth, moveHistory = [], forcedMove = null) {
+  if (depth === 0) return {};
 
-    const nextPlayer = currentPlayer === player1 ? player2 : player1;
-    const weights = {};
-    const availableColumns = board.length;
-    const weightFactor = Math.pow(availableColumns, depth - 1);
-    let foundForcedMove = false;
+  const nextPlayer = currentPlayer === player1 ? player2 : player1;
+  const weights = {};
+  const availableColumns = board.length;
+  const weightFactor = Math.pow(availableColumns, depth - 1);
+  let foundForcedMove = false;
 
-    for (let col = 0; col < availableColumns && !foundForcedMove; col++) {
-      const row = board[col].indexOf(null);
-      if (row === -1) continue;
+  for (let col = 0; col < availableColumns && !foundForcedMove; col++) {
+    const row = board[col].indexOf(null);
+    if (row === -1) continue;
 
-      board[col][row] = currentPlayer;
-      moveHistory.push(col);
+    board[col][row] = currentPlayer;
+    moveHistory.push(col);
 
-      if (this.check_for_win(col, row)) {
-        if (depth === maxDepth - 1 && currentPlayer.isAI) {
-          console.log("AI win at depth 1, column", col);
-          forcedMove = col;
-          foundForcedMove = true;
-          break;
-        }
-
-        let missedWin = false;
-        if (depth === maxDepth - 2 && currentPlayer.isAI) {
-          const round1Move = moveHistory[0];
-          const round3Move = moveHistory[2];
-          if (round1Move === round3Move && round1Move !== moveHistory[1]) {
-            missedWin = true;
-            console.log("Missed win at column", col);
-          }
-        }
-
-        weights[col] = missedWin
-          ? -weightFactor
-          : currentPlayer.isAI
-          ? weightFactor
-          : -weightFactor;
-      } else {
-        const childWeights = this.calculate_weights(
-          board,
-          nextPlayer,
-          depth - 1,
-          moveHistory.slice(),
-          forcedMove
-        );
-        weights[col] = Object.values(childWeights).reduce(
-          (sum, weight) => sum + weight,
-          0
-        );
+    if (this.check_for_win(col, row)) {
+      if (depth === maxDepth - 1 && currentPlayer.isAI) {
+        console.log("AI win at depth 1, column", col);
+        forcedMove = col;
+        foundForcedMove = true;
+        break;
       }
 
-      board[col][row] = null;
-      moveHistory.pop();
+      weights[col] = currentPlayer.isAI ? weightFactor : -weightFactor;
+    } else {
+      const childWeights = this.calculate_weights(board, nextPlayer, depth - 1, moveHistory.slice(), forcedMove);
+      weights[col] = Object.values(childWeights).reduce((sum, weight) => sum + weight, 0);
     }
 
-    // Only log the weights array when at the top level of depth (i.e., depth is equal to its initial value)
-    if (depth === maxDepth && !foundForcedMove) {
-      const weightsTable = Object.keys(weights).map((col) => ({
-        Depth: depth,
-        Column: col,
-        Weight: weights[col]
-      }));
-      console.table(weightsTable);
-    }
+    board[col][row] = null;
+    moveHistory.pop();
+  }
 
-    if (foundForcedMove) {
-      weights.forcedMove = forcedMove;
+  // Check for the forced move condition at depth 2
+  if (depth === maxDepth - 2 && currentPlayer.isAI) {
+    const positiveColumns = Object.keys(weights).filter(col => weights[col] > 0);
+    if (positiveColumns.length === 1) {
+      console.log("AI Block at depth 2, column", positiveColumns[0]);
+      forcedMove = parseInt(positiveColumns[0]);
+      foundForcedMove = true;
     }
+  }
 
-    return weights;
-  },
+  if (!foundForcedMove) {
+    // Check for missed wins at depth 3
+    for (const col in weights) {
+      if (depth === maxDepth - 2 && currentPlayer.isAI) {
+        const round1Move = moveHistory[0];
+        const round3Move = moveHistory[2];
+        if (round1Move === round3Move && round1Move !== moveHistory[1]) {
+          console.log("Missed win at column", col);
+          weights[col] = -weightFactor;
+        }
+      }
+    }
+  }
+
+  // Only log the weights array when at the top level of depth (i.e., depth is equal to its initial value)
+  if (depth === maxDepth && !foundForcedMove) {
+    const weightsTable = Object.keys(weights).map(col => ({
+      Depth: depth,
+      Column: col,
+      Weight: weights[col],
+    }));
+    console.table(weightsTable);
+  }
+
+  if (foundForcedMove) {
+    weights.forcedMove = forcedMove;
+  }
+
+  return weights;
+},
 
   make_ai_move: function () {
     const depth = maxDepth; // Define the desired depth
